@@ -1,0 +1,21 @@
+menu "EZO multi-sensor example"
+
+    config EXAMPLE_I2C_SDA_GPIO
+        int "I2C SDA GPIO"
+        default 21
+
+    config EXAMPLE_I2C_SCL_GPIO
+        int "I2C SCL GPIO"
+        default 22
+
+    config EXAMPLE_I2C_FREQUENCY_HZ
+        int "I2C clock frequency (Hz)"
+        default 100000
+        range 10000 400000
+
+    config EXAMPLE_READING_INTERVAL_MS
+        int "Reading interval (ms)"
+        default 5000
+        range 1000 60000
+
+endmenu

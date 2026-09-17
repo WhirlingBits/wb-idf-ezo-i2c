@@ -3,6 +3,10 @@
 
 #include "wb_ezo.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Set the temperature for compensation
  * Command: "T,n"
@@ -52,5 +56,9 @@ esp_err_t wb_ezo_ec_cal_low(wb_ezo_device_handle_t *handle, int ec_microsiemens)
  * @return esp_err_t 
  */
 esp_err_t wb_ezo_ec_cal_high(wb_ezo_device_handle_t *handle, int ec_microsiemens);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // WB_EZO_EC_H

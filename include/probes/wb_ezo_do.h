@@ -3,6 +3,10 @@
 
 #include "wb_ezo.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Set the temperature for compensation
  * Command: "T,n"
@@ -51,5 +55,9 @@ esp_err_t wb_ezo_do_cal_atmospheric(wb_ezo_device_handle_t *handle);
  * @return esp_err_t 
  */
 esp_err_t wb_ezo_do_cal_zero(wb_ezo_device_handle_t *handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // WB_EZO_DO_H
