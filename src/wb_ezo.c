@@ -1,3 +1,8 @@
+/* EZO Driver for ESP-IDF
+ * Generic EZO sensor driver for ESP-IDF based I2C devices.
+ * Developed by Whirlingbits
+*/
+
 #include "wb_ezo.h"
 
 #include <errno.h>
@@ -32,9 +37,18 @@ static esp_err_t default_transport_write(void *context,
                                          size_t length,
                                          uint32_t timeout_ms)
 {
-    (void)context;
-    return i2c_master_write_to_device(port, address, data, length,
-                                      timeout_to_ticks(timeout_ms));
+    (void)port;
+    (void)address;
+
+    wb_ezo_device_handle_t *handle = (wb_ezo_device_handle_t *)context;
+    if (handle == NULL || handle->dev_handle == NULL || data == NULL || length == 0U) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    return i2c_master_transmit(handle->dev_handle,
+                               data,
+                               length,
+                               timeout_to_ticks(timeout_ms));
 }
 
 static esp_err_t default_transport_read(void *context,
@@ -44,9 +58,18 @@ static esp_err_t default_transport_read(void *context,
                                         size_t length,
                                         uint32_t timeout_ms)
 {
-    (void)context;
-    return i2c_master_read_from_device(port, address, data, length,
-                                       timeout_to_ticks(timeout_ms));
+    (void)port;
+    (void)address;
+
+    wb_ezo_device_handle_t *handle = (wb_ezo_device_handle_t *)context;
+    if (handle == NULL || handle->dev_handle == NULL || data == NULL || length == 0U) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    return i2c_master_receive(handle->dev_handle,
+                              data,
+                              length,
+                              timeout_to_ticks(timeout_ms));
 }
 
 static wb_ezo_transport_t default_transport(void)
@@ -197,9 +220,40 @@ esp_err_t wb_ezo_init(wb_ezo_device_handle_t *handle,
     const wb_ezo_device_config_t config_copy = *config;
     memset(handle, 0, sizeof(*handle));
     handle->config = config_copy;
+
+    i2c_master_bus_config_t bus_cfg = {
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .i2c_port = config->i2c_port,
+        .scl_io_num = GPIO_NUM_NC,
+        .sda_io_num = GPIO_NUM_NC,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
+
+    esp_err_t err = i2c_new_master_bus(&bus_cfg, &handle->bus_handle);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = config->i2c_address,
+        .scl_speed_hz = 100000U,
+    };
+
+    err = i2c_master_bus_add_device(handle->bus_handle, &dev_cfg, &handle->dev_handle);
+    if (err != ESP_OK) {
+        i2c_del_master_bus(handle->bus_handle);
+        memset(handle, 0, sizeof(*handle));
+        return err;
+    }
+
     handle->transport = default_transport();
+    handle->transport.context = handle;
     handle->mutex = xSemaphoreCreateMutexStatic(&handle->mutex_storage);
     if (handle->mutex == NULL) {
+        i2c_master_bus_rm_device(handle->dev_handle);
+        i2c_del_master_bus(handle->bus_handle);
         memset(handle, 0, sizeof(*handle));
         return ESP_ERR_NO_MEM;
     }
@@ -225,6 +279,14 @@ esp_err_t wb_ezo_deinit(wb_ezo_device_handle_t *handle)
     }
 
     vSemaphoreDelete(handle->mutex);
+    if (handle->dev_handle != NULL) {
+        i2c_master_bus_rm_device(handle->dev_handle);
+        handle->dev_handle = NULL;
+    }
+    if (handle->bus_handle != NULL) {
+        i2c_del_master_bus(handle->bus_handle);
+        handle->bus_handle = NULL;
+    }
     memset(handle, 0, sizeof(*handle));
     return ESP_OK;
 }

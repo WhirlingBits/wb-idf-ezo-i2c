@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doxygenlayout version="1.0">
+  <!-- Navigation Index mit API-Reference als Hauptmenüpunkt -->
+  <navindex>
+    <!-- Main Page (Overview) -->
+    <tab type="mainpage" visible="yes" title="Overview"/>
+         
+    <!-- I2C Master Driver als Sub-Tab -->
+    <tab type="user" url="@ref wb_idf_i2c" title="I2C Master Driver">
+      <tab type="user" url="@ref wb_idf_i2c_init" title="Initialization"/>
+      <tab type="user" url="@ref wb_idf_i2c_byte" title="Byte Operations"/>
+      <tab type="user" url="@ref wb_idf_i2c_bit" title="Bit Operations"/>
+      <tab type="user" url="@ref wb_idf_i2c_word" title="Word Operations"/>
+      
+      <!-- Weitere Components als Sub-Tabs -->
+      <!-- Beispiele (auskommentiert, bei Bedarf aktivieren): -->
+      <!-- <tab type="user" url="@ref wb_idf_spi" title="SPI Master Driver"/> -->
+      <!-- <tab type="user" url="@ref wb_idf_uart" title="UART Driver"/> -->
+      <!-- <tab type="user" url="@ref wb_idf_gpio" title="GPIO Driver"/> -->
+    </tab>
+
+    <!-- WLAN Driver -->
+    <tab type="user" url="@ref wb_idf_wlan" title="WLAN Driver">
+      <tab type="user" url="@ref wb_idf_wlan" title="Initialization &amp; Management"/>
+    </tab>
+
+    <!-- SNTP Client -->
+    <tab type="user" url="@ref wb_idf_sntp" title="SNTP Client">
+      <tab type="user" url="@ref wb_idf_sntp_init" title="Initialization"/>
+    </tab>
+    
+    <!-- Optional: Zusätzliche Standard-Tabs (falls benötigt) -->
+    <!-- <tab type="modules" visible="yes" title="All Modules"/> -->
+    <!-- <tab type="files" visible="yes" title="Files"/> -->
+    
+  </navindex>
+
+  <!-- Layout für Group-Seiten (detaillierte API-Dokumentation) -->
+  <group>
+    <!-- Brief Description (kurze Zusammenfassung) -->
+    <briefdescription visible="yes"/>
+    
+    <!-- Group Graph (Modul-Abhängigkeiten) -->
+    <groupgraph visible="yes"/>
+    
+    <!-- Detailed Description -->
+    <detaileddescription title=""/>
+    
+    <!-- Member Declarations (Übersicht) -->
+    <memberdecl>
+      <!-- Sub-Modules (verschachtelte Gruppen) -->
+      <nestedgroups visible="yes" title="Sub-Modules"/>
+      
+      <!-- Directories (ausgeblendet für API-Docs) -->
+      <dirs visible="no"/>
+      
+      <!-- Files (ausgeblendet, da wir auf API fokussieren) -->
+      <files visible="no"/>
+      
+      <!-- Namespaces (bei C meist nicht relevant) -->
+      <namespaces visible="no"/>
+      
+      <!-- Classes/Structs (sichtbar mit leerem Titel) -->
+      <classes visible="yes" title=""/>
+      
+      <!-- Macros/Defines -->
+      <defines title="Macros"/>
+      
+      <!-- Typedefs -->
+      <typedefs title="Type Definitions"/>
+      
+      <!-- Enums -->
+      <enums title="Enumerations"/>
+      
+      <!-- Enum Values (einzelne Werte) -->
+      <enumvalues title="Enumerator Values"/>
+      
+      <!-- Functions -->
+      <functions title="Functions"/>
+      
+      <!-- Variables/Constants -->
+      <variables title="Variables"/>
+    </memberdecl>
+    
+    <!-- Member Definitions (detaillierte Dokumentation) -->
+    <memberdef>
+      <!-- Detaillierte Macro-Dokumentation -->
+      <defines title="Macro Documentation"/>
+      
+      <!-- Detaillierte Typedef-Dokumentation -->
+      <typedefs title="Typedef Documentation"/>
+      
+      <!-- Detaillierte Enum-Dokumentation -->
+      <enums title="Enumeration Documentation"/>
+      
+      <!-- Detaillierte Enum-Value-Dokumentation -->
+      <enumvalues title="Enumerator Documentation"/>
+      
+      <!-- Detaillierte Function-Dokumentation -->
+      <functions title="Function Documentation"/>
+      
+      <!-- Detaillierte Variable-Dokumentation -->
+      <variables title="Variable Documentation"/>
+    </memberdef>
+  </group>
+
+  <!-- Layout für Class-Seiten (falls benötigt) -->
+  <class>
+    <briefdescription visible="yes"/>
+    <detaileddescription title=""/>
+    <includes visible="yes"/>
+    <inheritancegraph visible="yes"/>
+    <collaborationgraph visible="yes"/>
+    <memberdecl>
+      <nestedclasses visible="yes" title=""/>
+      <publictypes title="Public Types"/>
+      <publicmethods title="Public Methods"/>
+      <publicattributes title="Public Attributes"/>
+      <protectedtypes title="Protected Types"/>
+      <protectedmethods title="Protected Methods"/>
+      <protectedattributes title="Protected Attributes"/>
+      <privatetypes title="Private Types"/>
+      <privatemethods title="Private Methods"/>
+      <privateattributes title="Private Attributes"/>
+    </memberdecl>
+    <memberdef>
+      <typedefs title=""/>
+      <functions title=""/>
+      <variables title=""/>
+    </memberdef>
+  </class>
+
+  <!-- Layout für File-Seiten (falls aktiviert) -->
+  <file>
+    <briefdescription visible="yes"/>
+    <detaileddescription title=""/>
+    <includes visible="yes"/>
+    <includegraph visible="yes"/>
+    <includedbygraph visible="yes"/>
+    <sourcelink visible="yes"/>
+    <memberdecl>
+      <defines title=""/>
+      <typedefs title=""/>
+      <enums title=""/>
+      <functions title=""/>
+      <variables title=""/>
+    </memberdecl>
+    <memberdef>
+      <defines title=""/>
+      <typedefs title=""/>
+      <enums title=""/>
+      <functions title=""/>
+      <variables title=""/>
+    </memberdef>
+  </file>
+</doxygenlayout>

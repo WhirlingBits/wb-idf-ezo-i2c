@@ -1,0 +1,184 @@
+/**
+ * @defgroup wb_idf_wlan WLAN Driver
+ * @ingroup wb_idf_core
+ * @brief Advanced WLAN functionality for ESP-IDF
+ * 
+ * @section wlan_overview Overview
+ * 
+ * The **WLAN Driver** provides a simplified, high-level interface for WiFi
+ * connectivity on ESP32 platforms. It wraps the standard ESP-IDF WiFi driver to
+ * provide easy-to-use functions for common modes like Station (STA) and Access Point (AP).
+ * 
+ * This driver is designed for:
+ * - **Simplicity**: One-function initialization for STA and AP modes
+ * - **Reliability**: Built-in event handling and retry logic
+ * - **Convenience**: Abstracts complex event loops and state machines
+ * 
+ * @section wlan_features Key Features
+ * 
+ * - ✅ **Station Mode (STA)**: Connect to existing WiFi networks
+ * - ✅ **Access Point Mode (AP)**: Create a WiFi hotspot
+ * - ✅ **Security**: Supports WPA/WPA2/WPA3 authentication (via Kconfig)
+ * - ✅ **Status Monitoring**: Simple mechanism to check connection status
+ * - ✅ **Event Handling**: Integrated event group management for connection states
+ * 
+ * @section wlan_architecture Architecture
+ * 
+ * The driver follows a layered architecture:
+ * 
+ * @verbatim
+ * graph TD
+ *     A[Application Layer]
+ *     B[wb-idf-wlan API]
+ *     C[ESP-IDF WiFi Driver]
+ *     D[WiFi Hardware]
+ *     
+ *     A --> B
+ *     B --> C
+ *     C --> D
+ *     
+ *     style B fill:#25C2A0,stroke:none
+ * @endverbatim
+ * 
+ * @section wlan_modules API Modules
+ * 
+ * The API is organized into main functional areas:
+ * 
+ * ### @ref wb_idf_wlan_init "Initialization"
+ * 
+ * Functions for setting up WiFi in different modes:
+ * - **Station Mode**: Connect to a router
+ * - **Access Point Mode**: Host a network
+ * 
+ * Key functions:
+ * - wb_wifi_init_sta() - Initialize as Station (Client)
+ * - wb_wifi_init_ap() - Initialize as Access Point (Hotspot)
+ * 
+ * ### @ref wb_idf_wlan_mgmt "Management"
+ * 
+ * Functions for controlling the WiFi lifecycle:
+ * 
+ * Key functions:
+ * - wb_wifi_check_status() - Get current connection status
+ * - wb_wifi_deinit() - Stop WiFi and free resources
+ * 
+ * @section wlan_quickstart Quick Start Guide
+ * 
+ * @subsection wlan_install Installation
+ * 
+ * Ensure `wb-idf-core` is included in your project components.
+ * 
+ * @subsection wlan_example_sta Station Mode Example
+ * 
+ * Connecting to a WiFi network:
+ * 
+ * @code{.c}
+ * #include "wb-idf-wlan.h"
+ * #include "nvs_flash.h"
+ * 
+ * void app_main(void)
+ * {
+ *     // 1. Initialize NVS (Required for WiFi)
+ *     esp_err_t ret = nvs_flash_init();
+ *     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+ *       ESP_ERROR_CHECK(nvs_flash_erase());
+ *       ret = nvs_flash_init();
+ *     }
+ *     ESP_ERROR_CHECK(ret);
+ * 
+ *     // 2. Initialize WiFi in Station Mode
+ *     char *ssid = "MyWiFiNetwork";
+ *     char *password = "mysupersecretpassword";
+ *     
+ *     ESP_LOGI("WLAN", "Connecting to %s...", ssid);
+ *     wb_wifi_init_sta(ssid, password);
+ * 
+ *     // 3. Check status (Optional)
+ *     if (wb_wifi_check_status() == WIFI_CONNECTED_BIT) {
+ *         ESP_LOGI("WLAN", "Connected successfully!");
+ *     }
+ * }
+ * @endcode
+ * 
+ * @subsection wlan_example_ap Access Point Mode Example
+ * 
+ * Creating a WiFi hotspot:
+ * 
+ * @code{.c}
+ * #include "wb-idf-wlan.h"
+ * #include "nvs_flash.h"
+ * 
+ * void app_main(void)
+ * {
+ *     // NVS Init...
+ *     
+ *     // Initialize WiFi in AP Mode
+ *     char *ap_ssid = "MyESP32Hotspot";
+ *     char *ap_password = "password123";
+ *     
+ *     ESP_LOGI("WLAN", "Starting AP: %s", ap_ssid);
+ *     wb_wifi_init_ap(ap_ssid, ap_password);
+ * }
+ * @endcode
+ * 
+ * @section wlan_troubleshooting Troubleshooting
+ * 
+ * @subsection wlan_common_errors Common Issues
+ * 
+ * **Connection Failed**
+ * 
+ * The device attempts to connect but eventually fails or times out.
+ * 
+ * **Possible Causes:**
+ * - Incorrect SSID or Password.
+ * - Signal too weak.
+ * - Router authentication settings mismatch (e.g., WPA3 required but not enabled in Kconfig).
+ * 
+ * **Solutions:**
+ * - Double check credentials.
+ * - Move closer to the router.
+ * - Check `menuconfig` settings under `Component config -> Wi-Fi`.
+ * 
+ * **WiFi Init Failed**
+ * 
+ * **Possible Causes:**
+ * - NVS not initialized before WiFi.
+ * - Power supply insufficiency.
+ * 
+ * **Solutions:**
+ * - Ensure `nvs_flash_init()` is called first.
+ * - Check power supply stability.
+ * 
+ * @section wlan_best_practices Best Practices
+ * 
+ * @subsection wlan_nvs NVS Initialization
+ * Always initialize NVS Flash (`nvs_flash_init()`) before initializing WiFi, as the WiFi driver stores calibration data in NVS.
+ * 
+ * @subsection wlan_event_handling Event Handling
+ * The driver uses an internal Event Group. The `wb_wifi_check_status()` function can be used to poll the status, but for more complex applications, consider hooking into the standard ESP-IDF event loop if you need asynchronous notifications.
+ * 
+ * @section wlan_license License
+ * 
+ * Copyright (c) 2024 WhirlingBits
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * @section wlan_support Support & Contributing
+ * 
+ * **Get Help:**
+ * - [GitHub Issues](https://github.com/WhirlingBits/wb-idf-core/issues)
+ * 
+ * **Author:**
+ * - WhirlingBits Team
+ */
+

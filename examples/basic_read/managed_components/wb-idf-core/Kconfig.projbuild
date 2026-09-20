@@ -1,0 +1,7 @@
+menu "WB-IDF-CORE"
+
+rsource "wb-idf-i2c/wb_idf_i2c.kconfig"
+rsource "wb-idf-wlan/wb_idf_wlan.kconfig"
+rsource "wb-idf-sntp/wb_idf_sntp.kconfig"
+
+endmenu

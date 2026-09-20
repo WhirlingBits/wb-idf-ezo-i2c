@@ -66,6 +66,8 @@ esp_err_t wb_ezo_get_calibration_status(wb_ezo_device_handle_t *handle, int *sta
 /** Query the device information string. */
 esp_err_t wb_ezo_get_device_info(wb_ezo_device_handle_t *handle, char *buffer, size_t len);
 
+#include "wb_ezo_board.h"
+
 #ifdef __cplusplus
 }
 #endif

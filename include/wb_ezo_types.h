@@ -2,10 +2,11 @@
 #define WB_EZO_TYPES_H
 
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
-#include "driver/i2c.h"
 #include "esp_err.h"
+#include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
@@ -137,6 +138,8 @@ typedef struct {
 typedef struct {
     wb_ezo_device_config_t config;
     wb_ezo_transport_t transport;
+    i2c_master_bus_handle_t bus_handle;
+    i2c_master_dev_handle_t dev_handle;
     StaticSemaphore_t mutex_storage;
     SemaphoreHandle_t mutex;
     uint32_t internal_magic;

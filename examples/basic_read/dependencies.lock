@@ -1,0 +1,18 @@
+dependencies:
+  idf:
+    source:
+      type: idf
+    version: 6.2.0
+  wb-idf-core:
+    component_hash: a9cf8fef99918aaa706d573a76cbb0f54238aed9387d00c843849be5826decc3
+    dependencies: []
+    source:
+      git: https://github.com/WhirlingBits/wb-idf-core.git
+      path: .
+      type: git
+    version: c8f03ad1e1ff2010c1ce12134a61cf5cdda72edb
+direct_dependencies:
+- wb-idf-core
+manifest_hash: f099488ed5c948e1d04500f87213264e7c3b962c8ecdb942f509a6e62fee3a51
+target: esp32p4
+version: 3.0.0

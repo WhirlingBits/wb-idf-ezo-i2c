@@ -29,106 +29,176 @@ required for each target and firmware revision.
 ## Integration
 
 Add this repository to an ESP-IDF application's `components` directory and require the
-component from the consuming component. The application owns the I2C driver lifecycle;
-this component does not install or delete an I2C driver.
+component from the consuming component.
 
-For example, initialize the legacy ESP-IDF I2C master driver before creating an EZO
-handle:
+This component uses the modern ESP-IDF I2C Master API (v1.x) and provides convenient
+helpers for initializing and managing EZO sensor buses and devices.
+
+### Basic Usage with I2C Master API
+
+Initialize an I2C bus and create device handles:
 
 ```c
-#include "driver/i2c.h"
+#include "wb_ezo_i2c.h"
 #include "wb_ezo.h"
 
-static esp_err_t init_ezo_ph(wb_ezo_device_handle_t *device)
-{
-    const i2c_config_t bus_config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = GPIO_NUM_21,
-        .scl_io_num = GPIO_NUM_22,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 100000,
-    };
-
-    esp_err_t err = i2c_param_config(I2C_NUM_0, &bus_config);
-    if (err != ESP_OK) {
-        return err;
-    }
-    err = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-    if (err != ESP_OK) {
-        return err;
-    }
-
-    wb_ezo_device_config_t config;
-    err = wb_ezo_get_default_config(EZO_TYPE_PH, &config);
-    if (err != ESP_OK) {
-        return err;
-    }
-
-    config.i2c_port = I2C_NUM_0;
-    config.i2c_address = EZO_ADDR_PH; /* May be overridden for re-addressed devices. */
-    config.io_timeout_ms = 200;
-    return wb_ezo_init(device, &config);
+// Initialize I2C bus
+i2c_master_bus_handle_t i2c_bus;
+esp_err_t err = wb_ezo_i2c_bus_init(I2C_NUM_0,
+                                     GPIO_NUM_22, // SCL
+                                     GPIO_NUM_21, // SDA
+                                     &i2c_bus);
+if (err != ESP_OK) {
+    return err;
 }
+
+// Create a device handle on the bus
+i2c_master_dev_handle_t ph_device = wb_ezo_i2c_device_create(
+    i2c_bus,
+    EZO_ADDR_PH,      // 7-bit I2C address
+    400000            // Clock speed in Hz
+);
+
+// Optionally assign a human-readable name
+wb_ezo_i2c_device_set_name(ph_device, "pH Sensor");
+
+// Probe whether a device is present
+err = wb_ezo_i2c_bus_probe_device(i2c_bus, EZO_ADDR_PH, 1000);
+if (err == ESP_OK) {
+    // Device is present
+}
+
+// Clean up
+wb_ezo_i2c_device_delete(ph_device);
+wb_ezo_i2c_bus_delete(i2c_bus);
 ```
 
-The compatibility helper below uses the device defaults and `I2C_NUM_0`:
+### Multiple Sensors on One Bus
+
+Create multiple device handles on the same I2C bus:
 
 ```c
-wb_ezo_device_handle_t ph;
-esp_err_t err = wb_ezo_init_desc(&ph, EZO_TYPE_PH);
+i2c_master_bus_handle_t i2c_bus;
+wb_ezo_i2c_bus_init(I2C_NUM_0, GPIO_NUM_22, GPIO_NUM_21, &i2c_bus);
+
+// Create handles for different EZO devices
+i2c_master_dev_handle_t ph_dev = wb_ezo_i2c_device_create(i2c_bus, EZO_ADDR_PH, 400000);
+i2c_master_dev_handle_t ec_dev = wb_ezo_i2c_device_create(i2c_bus, EZO_ADDR_EC, 400000);
+i2c_master_dev_handle_t do_dev = wb_ezo_i2c_device_create(i2c_bus, EZO_ADDR_DO, 400000);
+
+wb_ezo_i2c_device_set_name(ph_dev, "pH");
+wb_ezo_i2c_device_set_name(ec_dev, "Conductivity");
+wb_ezo_i2c_device_set_name(do_dev, "Dissolved Oxygen");
+
+// Use devices...
+
+// Clean up in reverse order
+wb_ezo_i2c_device_delete(ph_dev);
+wb_ezo_i2c_device_delete(ec_dev);
+wb_ezo_i2c_device_delete(do_dev);
+wb_ezo_i2c_bus_delete(i2c_bus);
 ```
+
+### Using Sensor-Specific Helpers
+
+The component includes dedicated helpers for pH, EC, DO, and RTD sensors. These provide
+convenient functions for common operations. See `include/probes/` for available helpers.
 
 ## Reading and commands
 
+The component provides a low-level API for reading from and sending commands to EZO
+devices. Example:
+
 ```c
+#include "wb_ezo_i2c.h"
+#include "wb_ezo.h"
+
+i2c_master_bus_handle_t i2c_bus;
+i2c_master_dev_handle_t device;
+
+// Initialize bus and device (see Integration section)
+wb_ezo_i2c_bus_init(I2C_NUM_0, GPIO_NUM_22, GPIO_NUM_21, &i2c_bus);
+device = wb_ezo_i2c_device_create(i2c_bus, EZO_ADDR_PH, 400000);
+
+// Perform a read with automatic delay
 char reading[32];
-esp_err_t err = wb_ezo_read_string(&ph, reading, sizeof(reading));
+esp_err_t err = wb_ezo_read_string(device, reading, sizeof(reading));
 if (err == ESP_OK) {
-    /* Parse or publish reading. */
+    // Parse or publish the reading
+    float ph_value = atof(reading);
 }
 
-/* Always invalidate the handle after all users have stopped. */
-err = wb_ezo_deinit(&ph);
+// Send a command and read the response
+wb_ezo_execute_command(device, "Cal,mid,7.0", 900, reading, sizeof(reading));
+
+// Send a command without reading status (e.g., configuration commands)
+wb_ezo_send_command(device, "L,0");  // Turn off LED
+
+// Get device info
+char info[48];
+wb_ezo_get_device_info(device, info, sizeof(info));
+
+// Query calibration status
+int cal_status = 0;
+wb_ezo_get_calibration_status(device, &cal_status);
+
+// Clean up
+wb_ezo_i2c_device_delete(device);
+wb_ezo_i2c_bus_delete(i2c_bus);
 ```
 
-`wb_ezo_execute_command()` atomically performs write, processing delay, and response
-read while holding the per-device mutex. It is the preferred API for commands that
-return a status. `wb_ezo_send_command()` intentionally performs only the raw write and
+### API Functions
+
+**`wb_ezo_execute_command()`** atomically performs write, processing delay, and response
+read while holding the per-device lock. This is the preferred API for commands that
+return a status. **`wb_ezo_send_command()`** intentionally performs only the raw write and
 therefore cannot confirm whether the device accepted the command.
 
-When a device returns status `254` (pending), the command API retries reads according
-to `pending_retries` and `pending_retry_delay_ms`. `wb_ezo_execute_command_ex()` and
-`wb_ezo_read_response_ex()` additionally preserve the raw EZO status and payload in a
-`wb_ezo_response_t`.
+When a device returns status `254` (pending), the command API automatically retries
+reads according to `pending_retries` and `pending_retry_delay_ms` in the device config.
 
-## Configuration
+Use **`wb_ezo_execute_command_ex()`** and **`wb_ezo_read_response_ex()`** when you need
+to preserve the raw EZO status and payload in a `wb_ezo_response_t` structure.
 
-Start with `wb_ezo_get_default_config()` and override fields before calling
-`wb_ezo_init()`:
+## I2C Bus Configuration
 
-- `i2c_port`: ESP-IDF I2C controller used by this device.
-- `i2c_address`: 7-bit device address; address zero is rejected.
-- `delay_ms`: processing delay used by `wb_ezo_read_string()`.
-- `io_timeout_ms`: timeout for each transport read or write.
-- `mutex_timeout_ms`: maximum wait for another operation on the same handle.
-- `pending_retries`: additional reads after EZO status `254`.
-- `pending_retry_delay_ms`: delay between pending retries.
+Initialize an I2C bus using `wb_ezo_i2c_bus_init()` with the desired port, SCL, and SDA
+GPIO pins. The bus clock frequency is fixed at 400 kHz.
 
-A custom `wb_ezo_transport_t` can be installed with `wb_ezo_set_transport()`. This is
-useful for alternate transports and deterministic host-side tests. Passing `NULL`
-restores the default ESP-IDF I2C implementation.
+### Device Configuration
 
-## Thread safety and lifetime
+When creating a device with `wb_ezo_i2c_device_create()`, you specify:
 
-Operations made through one initialized handle are serialized. The mutex covers the
-complete write-delay-read transaction, preventing two tasks from exchanging responses.
-Different handles are independent; synchronization of handles that point to the same
-physical address is the application's responsibility.
+- **I2C bus handle**: The bus created by `wb_ezo_i2c_bus_init()`.
+- **Device address**: 7-bit I2C address (e.g., `EZO_ADDR_PH` = 0x63).
+- **Clock speed**: Device clock frequency in Hz (typically 400000 or 100000).
 
-Do not copy an initialized handle because it contains a static mutex. Configure the
-handle and custom transport before sharing it with tasks. Stop all users before calling
-`wb_ezo_deinit()`.
+You can optionally assign a human-readable name using `wb_ezo_i2c_device_set_name()`
+for easier debugging and logging.
+
+### Advanced: Custom Transport
+
+For testing or alternate transports, use `wb_ezo_set_transport()` with a custom
+`wb_ezo_transport_t`. Pass `NULL` to restore the default I2C transport.
+
+## Thread Safety and Lifetime
+
+Operations through one device handle are serialized; the I2C driver manages the bus lock.
+The per-device mutex prevents two tasks from exchanging responses on the same device.
+
+### Proper Cleanup
+
+Always clean up resources in the reverse order of creation:
+
+```c
+// Clean up in reverse order
+wb_ezo_i2c_device_delete(device1);
+wb_ezo_i2c_device_delete(device2);
+wb_ezo_i2c_bus_delete(i2c_bus);
+```
+
+Do not reuse a device or bus handle after deletion. Stop all tasks using the handles
+before calling the delete functions.
 
 ## Error handling
 
@@ -143,29 +213,35 @@ internally. Common mappings are:
 
 ## Examples
 
-Each directory below is a standalone ESP-IDF project that includes this repository as
-an external component:
+Each directory in `examples/` is a standalone ESP-IDF project that demonstrates
+component usage:
 
-- [`examples/basic_read`](examples/basic_read): initializes the I2C master and reads an
-  EZO-pH circuit periodically. SDA, SCL, clock frequency, and reading interval are
-  configurable through `idf.py menuconfig`.
-- [`examples/multi_sensor`](examples/multi_sensor): configures EZO-pH, EZO-EC, EZO-DO,
-  and EZO-RTD handles on one bus, applies compensation values where supported, and
-  reads all devices sequentially.
-- [`examples/custom_transport`](examples/custom_transport): installs an in-memory fake
-  transport and demonstrates a pending response followed by a successful structured
-  response. No EZO or I2C hardware is required.
+- **`examples/basic_read`**: Initializes the modern I2C Master bus, creates device
+  handles for pH and temperature sensors, and reads values periodically. GPIO pins,
+  I2C port, and reading interval are configurable through `idf.py menuconfig`.
 
-Build an example from its project directory after loading the ESP-IDF environment:
+- **`examples/multi_sensor`**: Creates handles for pH, EC, DO, and RTD sensors on one
+  bus, applies compensation values where supported, and reads all devices sequentially.
+
+- **`examples/custom_transport`**: Installs an in-memory fake transport and demonstrates
+  a pending response followed by a successful structured response. No EZO or I2C hardware
+  is required; useful for testing and CI/CD pipelines.
+
+### Building and Running Examples
+
+Load the ESP-IDF environment and navigate to an example directory:
 
 ```sh
 cd examples/basic_read
 idf.py set-target esp32
-idf.py menuconfig
+idf.py menuconfig       # Configure GPIO pins and settings
 idf.py build
+idf.py flash
+idf.py monitor
 ```
 
-Flash and monitor it with the normal ESP-IDF commands for the connected target. For
-`basic_read` and `multi_sensor`, configure GPIOs before flashing and ensure every EZO
-circuit is in I2C mode with the expected address. The custom transport example can be
-used as a smoke test for command execution and pending retries.
+Configure GPIO pins and I2C settings before flashing real hardware. Ensure every EZO
+circuit is in I2C mode with the expected address.
+
+The `custom_transport` example runs on any machine and requires no hardware—use it as
+a smoke test for command execution and pending retries.

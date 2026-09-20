@@ -1,0 +1,102 @@
+/**
+ * @mainpage WhirlingBits Core Components Documentation
+ * 
+ * @section mainpage_overview Overview
+ * 
+ * The **wb-idf-core** package provides a collection of high-quality, 
+ * production-ready components for ESP-IDF projects. All components follow 
+ * ESP-IDF coding standards and best practices.
+ * 
+ * @section mainpage_features Key Features
+ * 
+ * - ✅ **Production-Ready:** Thoroughly tested and documented
+ * - ✅ **ESP-IDF Native:** Seamless integration with ESP-IDF
+ * - ✅ **Well-Documented:** Comprehensive API documentation
+ * - ✅ **Example-Rich:** Real-world usage examples included
+ * - ✅ **Thread-Safe:** Designed for multi-threaded environments
+ * 
+ * @section mainpage_components Available Components
+ * 
+ * ### Communication Interfaces
+ * 
+ * - @ref wb_idf_i2c "I2C Master Driver" - Advanced I2C functionality
+ *   - Multiple bus support
+ *   - Device probing and detection
+ *   - Bit-level register manipulation
+ *   - 16-bit word operations
+ * 
+ * - **SPI Master Driver** (Coming soon)
+ * - **UART Driver** (Coming soon)
+ * 
+ * ### Peripherals
+ * 
+ * - **GPIO Extensions** (Coming soon)
+ * - **ADC Utilities** (Coming soon)
+ * 
+ * @section mainpage_installation Installation
+ * 
+ * Add to your ESP-IDF project using the component manager:
+ * 
+ * @code{.bash}
+ * idf.py add-dependency "whirlingbits/wb-idf-core^1.0.0"
+ * @endcode
+ * 
+ * Or add to `idf_component.yml`:
+ * 
+ * @code{.yaml}
+ * dependencies:
+ *   whirlingbits/wb-idf-core: "^1.0.0"
+ * @endcode
+ * 
+ * @section mainpage_quick_start Quick Start
+ * 
+ * ### I2C Example
+ * 
+ * @code{.c}
+ * #include "wb_idf_i2c.h"
+ * 
+ * // Initialize I2C bus
+ * i2c_master_bus_handle_t bus_handle;
+ * wb_i2c_master_bus_init(I2C_NUM_0, GPIO_NUM_21, GPIO_NUM_22, 100000, &bus_handle);
+ * 
+ * // Add device
+ * i2c_master_dev_handle_t dev_handle;
+ * wb_i2c_master_bus_add_device(bus_handle, 0x3C, &dev_handle);
+ * 
+ * // Write data
+ * uint8_t data[] = {0x00, 0x01, 0x02};
+ * wb_i2c_master_byte_write(dev_handle, 0x00, data, sizeof(data));
+ * @endcode
+ * 
+ * @section mainpage_modules Module Documentation
+ * 
+ * Browse the complete API documentation by module:
+ * 
+ * - @ref wb_idf_i2c
+ * 
+ * @section mainpage_requirements Requirements
+ * 
+ * - **ESP-IDF Version:** 5.0 or higher
+ * - **Supported SoCs:** ESP32, ESP32-S2, ESP32-S3, ESP32-C3, ESP32-C6
+ * - **License:** Apache License 2.0
+ * 
+ * @section mainpage_resources Resources
+ * 
+ * - [GitHub Repository](https://github.com/WhirlingBits/wb-idf-core)
+ * - [Issue Tracker](https://github.com/WhirlingBits/wb-idf-core/issues)
+ * - [Documentation](https://whirlingbits.github.io/wb-idf-core)
+ * - [Examples](https://github.com/WhirlingBits/wb-idf-core/tree/main/examples)
+ * 
+ * @section mainpage_support Support
+ * 
+ * For questions, bug reports, or feature requests:
+ * - Open an issue on [GitHub](https://github.com/WhirlingBits/wb-idf-core/issues)
+ * - Contact: support@whirlingbits.com
+ * 
+ * @section mainpage_license License
+ * 
+ * Copyright (c) 2024 WhirlingBits
+ * 
+ * Licensed under the Apache License, Version 2.0.
+ * See LICENSE file in the project root for details.
+ */

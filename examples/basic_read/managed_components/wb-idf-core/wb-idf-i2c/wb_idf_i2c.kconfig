@@ -1,0 +1,20 @@
+    menu "WB-IDF-I2C Example Configuration"
+
+        config WB_EXAMPLE_I2C_PORT
+            int "I2C Port number"
+            default 0
+
+        config WB_EXAMPLE_I2C_SDA_GPIO
+            int "I2C SDA GPIO number"
+            default 21
+
+        config WB_EXAMPLE_I2C_SCL_GPIO
+            int "I2C SCL GPIO number"
+            default 22
+    endmenu
+    menu "WB-IDF-I2C Configuration"
+
+        config WB_IDF_I2C_TIMEOUT_MS
+            int "I2C Timeout (ms)"
+            default 1000
+    endmenu

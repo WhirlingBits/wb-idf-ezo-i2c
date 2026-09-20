@@ -45,6 +45,15 @@ static bool parse_float_value(const char *text, float *value, const char **end)
     return true;
 }
 
+esp_err_t wb_ezo_ph_read(wb_ezo_device_handle_t *handle, char *buffer, size_t len)
+{
+    if (validate_ph_handle(handle) != ESP_OK || buffer == NULL || len == 0U) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    return wb_ezo_execute_command(handle, "R", handle->config.delay_ms, buffer, len);
+}
+
 esp_err_t wb_ezo_ph_set_temperature(wb_ezo_device_handle_t *handle, float temp_c)
 {
     esp_err_t err = validate_ph_handle(handle);
@@ -58,6 +67,16 @@ esp_err_t wb_ezo_ph_set_temperature(wb_ezo_device_handle_t *handle, float temp_c
         return err;
     }
     return wb_ezo_execute_command(handle, command, WB_EZO_PH_QUERY_DELAY_MS, NULL, 0U);
+}
+
+esp_err_t wb_ezo_ph_cal_clear(wb_ezo_device_handle_t *handle)
+{
+    if (validate_ph_handle(handle) != ESP_OK) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    return wb_ezo_execute_command(handle, "Cal,clear", WB_EZO_PH_CALIBRATION_DELAY_MS,
+                                  NULL, 0U);
 }
 
 esp_err_t wb_ezo_ph_get_slope_ex(wb_ezo_device_handle_t *handle,

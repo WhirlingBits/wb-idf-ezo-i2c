@@ -1,70 +1,80 @@
+/* EZO Basic Read Example for ESP-IDF
+ * Basic I2C read example for EZO sensors using wb-idf-i2c.
+ * Developed by Whirlingbits
+*/
+
 #include "sdkconfig.h"
 
-#include "driver/i2c.h"
+#include <stdlib.h>
+
 #include "esp_err.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "ezo_setup.h"
 #include "wb_ezo.h"
+#include "wb_ezo_i2c.h"
 
 static const char *TAG = "ezo_basic_read";
-static const i2c_port_t I2C_PORT = I2C_NUM_0;
 
-static esp_err_t init_i2c_master(void)
-{
-    const i2c_config_t config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = CONFIG_EXAMPLE_I2C_SDA_GPIO,
-        .scl_io_num = CONFIG_EXAMPLE_I2C_SCL_GPIO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = CONFIG_EXAMPLE_I2C_FREQUENCY_HZ,
-    };
-
-    esp_err_t err = i2c_param_config(I2C_PORT, &config);
-    if (err != ESP_OK) {
-        return err;
-    }
-    return i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);
-}
+#define I2C_WB_SDA  CONFIG_WB_EXAMPLE_I2C_SDA_GPIO
+#define I2C_WB_SCL  CONFIG_WB_EXAMPLE_I2C_SCL_GPIO
+#define I2C_WB_PORT CONFIG_WB_EXAMPLE_I2C_PORT
 
 void app_main(void)
 {
-    esp_err_t err = init_i2c_master();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Could not initialize I2C: %s", esp_err_to_name(err));
+    i2c_master_bus_handle_t bus = NULL;
+    i2c_master_dev_handle_t ph = NULL;
+    i2c_master_dev_handle_t temp = NULL;
+
+    esp_err_t ret = wb_ezo_i2c_bus_init(I2C_WB_PORT, I2C_WB_SCL, I2C_WB_SDA, &bus);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "I2C bus init failed: %s", esp_err_to_name(ret));
         return;
     }
 
-    wb_ezo_device_config_t config;
-    err = wb_ezo_get_default_config(EZO_TYPE_PH, &config);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Could not create pH defaults: %s", esp_err_to_name(err));
-        i2c_driver_delete(I2C_PORT);
+    ESP_LOGI(TAG, "I2C bus initialized on port %d", I2C_WB_PORT);
+
+    ret = ezo_init_ph_sensor(bus, &ph);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Could not initialize EZO pH device: %s", esp_err_to_name(ret));
+        wb_ezo_i2c_bus_delete(bus);
         return;
     }
 
-    config.i2c_port = I2C_PORT;
-    config.io_timeout_ms = 200U;
-
-    wb_ezo_device_handle_t ph;
-    err = wb_ezo_init(&ph, &config);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Could not initialize EZO-pH handle: %s", esp_err_to_name(err));
-        i2c_driver_delete(I2C_PORT);
-        return;
+    ret = ezo_init_temperature_sensor(bus, &temp);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Could not initialize EZO temperature device: %s", esp_err_to_name(ret));
     }
 
-    ESP_LOGI(TAG, "Reading EZO-pH at address 0x%02X", config.i2c_address);
-    while (true) {
-        char reading[32] = {0};
-        err = wb_ezo_read_string(&ph, reading, sizeof(reading));
-        if (err == ESP_OK) {
-            ESP_LOGI(TAG, "pH: %s", reading);
+    char ph_response[48] = {0};
+    char temp_response[48] = {0};
+
+    if (ph != NULL) {
+        ret = ezo_read_ph_value(ph, ph_response, sizeof(ph_response), CONFIG_WB_IDF_I2C_TIMEOUT_MS);
+        if (ret == ESP_OK) {
+            const float value = atof(ph_response);
+            ESP_LOGI(TAG, "EZO pH response: %f", value);
         } else {
-            ESP_LOGW(TAG, "Read failed: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "Failed to read EZO pH response: %s", esp_err_to_name(ret));
         }
-
-        vTaskDelay(pdMS_TO_TICKS(CONFIG_EXAMPLE_READING_INTERVAL_MS));
     }
+
+    if (temp != NULL) {
+        ret = ezo_read_temperature_value(temp, temp_response, sizeof(temp_response), CONFIG_WB_IDF_I2C_TIMEOUT_MS);
+        if (ret == ESP_OK) {
+            const float value = atof(temp_response);
+            ESP_LOGI(TAG, "EZO temperature response: %f", value);
+        } else {
+            ESP_LOGE(TAG, "Failed to read EZO temperature response: %s", esp_err_to_name(ret));
+        }
+    }
+
+    if (ph != NULL) {
+        wb_ezo_i2c_device_delete(ph);
+    }
+    if (temp != NULL) {
+        wb_ezo_i2c_device_delete(temp);
+    }
+    wb_ezo_i2c_bus_delete(bus);
 }

@@ -1,0 +1,7 @@
+menu "WB-SNTP-Configuration"
+        config SNTP_SERVERNAME
+        string "SNTP Servername"
+        default "pool.ntp.org"
+        help
+            Servername of SNTP Server.
+endmenu

@@ -1,3 +1,5 @@
-idf_component_register(SRCS "main.c"
+idf_component_register(SRCS "main.c" "ezo_setup.c"
                        INCLUDE_DIRS "."
-                       REQUIRES driver wb-idf-ezo-i2c)
+                       REQUIRES wb-idf-ezo-i2c wb-idf-i2c
+                       )
+

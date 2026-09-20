@@ -8,6 +8,17 @@ extern "C" {
 #endif
 
 /**
+ * @brief Read the current pH value.
+ * Command: "R"
+ *
+ * @param handle Device handle
+ * @param buffer Output buffer for the raw ASCII value
+ * @param len Buffer length in bytes
+ * @return esp_err_t
+ */
+esp_err_t wb_ezo_ph_read(wb_ezo_device_handle_t *handle, char *buffer, size_t len);
+
+/**
  * @brief Set the temperature for compensation (only affects next reading if not continuously reading)
  * Command: "T,n"
  * 
@@ -16,6 +27,15 @@ extern "C" {
  * @return esp_err_t 
  */
 esp_err_t wb_ezo_ph_set_temperature(wb_ezo_device_handle_t *handle, float temp_c);
+
+/**
+ * @brief Clear the pH calibration history.
+ * Command: "Cal,clear"
+ *
+ * @param handle Device handle
+ * @return esp_err_t
+ */
+esp_err_t wb_ezo_ph_cal_clear(wb_ezo_device_handle_t *handle);
 
 /**
  * @brief Get the acid and base slope percentages of the pH probe.
